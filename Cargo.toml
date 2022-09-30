@@ -1,0 +1,24 @@
+[package]
+name = "esp-ota"
+version = "0.1.0"
+authors = ["Linus Färnstrand <faern@faern.net>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+
+description = """
+Easy OTA updates for ESP32 chips using only safe Rust. Transport agnostic.
+"""
+
+repository = "https://github.com/faern/esp-ota"
+keywords = ["esp", "esp32", "ota", "flash", "firmware"]
+categories = ["embedded", "api-bindings"]
+
+[features]
+default = ["log"]
+
+[dependencies]
+esp-idf-sys = { version = "0.31.6" }
+log = { version = "0.4", optional = true }
+
+[build-dependencies]
+embuild = "0.30.3"
