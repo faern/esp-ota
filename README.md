@@ -51,7 +51,11 @@ esptool.py --chip ESP32-C3 elf2image --output my-app.bin target/release/my-app
 
 ### Code
 
+To flash a new app to the next partition on the flash, include code similar to this:
+
 ```rust
+// This is a very unrealistic example. You usually don't store the new app in the
+// old app. Instead you obtain it by downloading it from somewhere or similar.
 const NEW_APP: &[u8] = include_bytes!("../my-app.bin");
 
 // Finds the next suitable OTA partition and erases it
@@ -72,4 +76,17 @@ let restart_handle = ota.finalize()?;
 
 // Restarts the CPU, booting into the newly written app.
 restart_handle.restart();
+```
+
+And if the rollback feature is enabled, you need to validate that the new app works as intended,
+or initiate a rollback.
+
+```rust
+fn main() {
+    if is_working_as_intended() {
+        esp_ota::mark_app_valid();
+    } else {
+        esp_ota::rollback().expect("Failed to roll back to working app");
+    }
+}
 ```

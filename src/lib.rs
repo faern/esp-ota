@@ -4,11 +4,12 @@ use core::fmt;
 use core::ptr;
 use esp_idf_sys::{
     esp_ota_abort, esp_ota_begin, esp_ota_end, esp_ota_get_next_update_partition, esp_ota_handle_t,
+    esp_ota_mark_app_invalid_rollback_and_reboot, esp_ota_mark_app_valid_cancel_rollback,
     esp_ota_set_boot_partition, esp_ota_write, esp_partition_t, esp_restart, ESP_ERR_FLASH_OP_FAIL,
     ESP_ERR_FLASH_OP_TIMEOUT, ESP_ERR_INVALID_ARG, ESP_ERR_INVALID_SIZE, ESP_ERR_INVALID_STATE,
-    ESP_ERR_NOT_FOUND, ESP_ERR_NO_MEM, ESP_ERR_OTA_PARTITION_CONFLICT,
+    ESP_ERR_NOT_FOUND, ESP_ERR_NO_MEM, ESP_ERR_OTA_PARTITION_CONFLICT, ESP_ERR_OTA_ROLLBACK_FAILED,
     ESP_ERR_OTA_ROLLBACK_INVALID_STATE, ESP_ERR_OTA_SELECT_INFO_INVALID,
-    ESP_ERR_OTA_VALIDATE_FAILED, ESP_OK, OTA_SIZE_UNKNOWN,
+    ESP_ERR_OTA_VALIDATE_FAILED, ESP_FAIL, ESP_OK, OTA_SIZE_UNKNOWN,
 };
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -60,6 +61,10 @@ pub enum ErrorKind {
     InvalidImage,
     /// If flash encryption is enabled, this result indicates an internal error writing the final encrypted bytes to flash.
     WritingEncryptedFailed,
+    /// The rollback failed.
+    RollbackFailed,
+    /// The rollback is not possible due to flash does not have any apps.
+    RollbackFailedNoApps,
 }
 
 impl fmt::Display for ErrorKind {
@@ -78,6 +83,10 @@ impl fmt::Display for ErrorKind {
             NothingWritten => "Ota was never written to",
             InvalidImage => "OTA image is invalid",
             WritingEncryptedFailed => "Internal error writing the final encrypted bytes to flash",
+            RollbackFailed => "The rollback failed",
+            RollbackFailedNoApps => {
+                "The rollback is not possible due to flash does not have any apps"
+            }
         }
         .fmt(f)
     }
@@ -205,5 +214,34 @@ impl OtaFinished {
     pub fn restart(self) -> ! {
         unsafe { esp_restart() }
         panic!("esp_restart returned");
+    }
+}
+
+/// Call this function to indicate that the running app is working well.
+///
+/// Should be called (at least) the first time a new app starts up after
+/// being flashed.
+pub fn mark_app_valid() {
+    match unsafe { esp_ota_mark_app_valid_cancel_rollback() } {
+        ESP_OK => (),
+        code => panic!(
+            "Unexpected esp_ota_mark_app_valid_cancel_rollback code: {}",
+            code
+        ),
+    }
+}
+
+/// Call this function to roll back to the previously workable app with reboot.
+///
+/// If rolling back failed, it returns an error, otherwise this function never returns,
+/// as the CPU is rebooting.
+pub fn rollback() -> Result<core::convert::Infallible> {
+    match unsafe { esp_ota_mark_app_invalid_rollback_and_reboot() } {
+        ESP_FAIL => Err(Error::from_kind(ErrorKind::RollbackFailed)),
+        ESP_ERR_OTA_ROLLBACK_FAILED => Err(Error::from_kind(ErrorKind::RollbackFailedNoApps)),
+        code => panic!(
+            "Unexpected esp_ota_mark_app_invalid_rollback_and_reboot code: {}",
+            code
+        ),
     }
 }
