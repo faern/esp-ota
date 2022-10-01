@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 use core::fmt;
+use core::mem;
 use core::ptr;
 use esp_idf_sys::{
     esp_ota_abort, esp_ota_begin, esp_ota_end, esp_ota_get_next_update_partition, esp_ota_handle_t,
@@ -12,8 +13,9 @@ use esp_idf_sys::{
     ESP_ERR_OTA_VALIDATE_FAILED, ESP_FAIL, ESP_OK, OTA_SIZE_UNKNOWN,
 };
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
+/// An error that can happen during ESP OTA operations.
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
@@ -24,6 +26,7 @@ impl Error {
         Self { kind }
     }
 
+    /// Returns the kind of error as an enum, that can be matched on.
     pub fn kind(&self) -> ErrorKind {
         self.kind
     }
@@ -55,7 +58,7 @@ pub enum ErrorKind {
     FlashFailed,
     /// OTA data partition has invalid contents.
     InvalidOtaPartitionData,
-    /// The Ota handle was finalized before any app image was written to it.
+    /// The [`OtaUpdate`] handle was finalized before any app image was written to it.
     NothingWritten,
     /// OTA image is invalid (either not a valid app image, or - if secure boot is enabled - signature failed to verify.)
     InvalidImage,
@@ -80,7 +83,7 @@ impl fmt::Display for ErrorKind {
             FlashTimeout => "Flash write operation timed out",
             FlashFailed => "Flash write operation failed",
             InvalidOtaPartitionData => "OTA data partition has invalid contents",
-            NothingWritten => "Ota was never written to",
+            NothingWritten => "OtaUpdate was never written to",
             InvalidImage => "OTA image is invalid",
             WritingEncryptedFailed => "Internal error writing the final encrypted bytes to flash",
             RollbackFailed => "The rollback failed",
@@ -92,13 +95,17 @@ impl fmt::Display for ErrorKind {
     }
 }
 
-pub struct Ota {
+/// Represents an ongoing OTA update.
+///
+/// Dropping this object before calling [`finalize`](OtaUpdate::finalize) will abort the update.
+#[derive(Debug)]
+pub struct OtaUpdate {
     partition: *const esp_partition_t,
     ota_handle: esp_ota_handle_t,
 }
 
-impl Ota {
-    /// Commence an OTA update writing to the next OTA compatible partition.
+impl OtaUpdate {
+    /// Starts an OTA update to the next OTA compatible partition.
     ///
     /// Finds next partition round-robin, starting from the current running partition.
     /// The entire partition is erased.
@@ -133,7 +140,7 @@ impl Ota {
         })
     }
 
-    /// Write OTA update data to partition.
+    /// Write app image data to partition.
     ///
     /// This method can be called multiple times as data is received during the OTA operation.
     /// Data is written sequentially to the partition.
@@ -158,8 +165,9 @@ impl Ota {
 
     /// Finish OTA update and validate newly written app image.
     ///
-    /// If validation succeeds, sets the boot partition to the newly flashed OTA partition.
-    pub fn finalize(self) -> Result<OtaFinished> {
+    /// Unless you also call [`set_as_boot_partition`](CompletedOtaUpdate::set_as_boot_partition) the new app will not
+    /// start.
+    pub fn finalize(self) -> Result<CompletedOtaUpdate> {
         match unsafe { esp_ota_end(self.ota_handle) } {
             ESP_OK => Ok(()),
             ESP_ERR_NOT_FOUND => panic!("Invalid OTA handle"),
@@ -169,29 +177,19 @@ impl Ota {
             code => panic!("Unexpected esp_ota_end return code: {code}"),
         }?;
 
-        match unsafe { esp_ota_set_boot_partition(self.partition) } {
-            ESP_OK => Ok(()),
-            ESP_ERR_INVALID_ARG => panic!("Invalid partition sent to esp_ota_set_boot_partition"),
-            ESP_ERR_OTA_VALIDATE_FAILED => Err(Error::from_kind(ErrorKind::InvalidImage)),
-            ESP_ERR_NOT_FOUND => panic!("OTA data partition not found"),
-            ESP_ERR_FLASH_OP_TIMEOUT => Err(Error::from_kind(ErrorKind::FlashTimeout)),
-            ESP_ERR_FLASH_OP_FAIL => Err(Error::from_kind(ErrorKind::FlashFailed)),
-            code => panic!("Unexpected esp_ota_set_boot_partition code: {}", code),
-        }?;
+        let partition = self.partition;
+        mem::forget(self);
 
-        Ok(OtaFinished(()))
+        Ok(CompletedOtaUpdate { partition })
     }
 
+    /// Returns a raw pointer to the partition that the new app is/will be written to.
     pub fn raw_partition(&self) -> *const esp_partition_t {
         self.partition
     }
-
-    pub fn raw_handle(&self) -> esp_ota_handle_t {
-        self.ota_handle
-    }
 }
 
-impl Drop for Ota {
+impl Drop for OtaUpdate {
     fn drop(&mut self) {
         #[cfg(feature = "log")]
         log::debug!("Aborting OTA update");
@@ -200,20 +198,44 @@ impl Drop for Ota {
         if abort_result_code != ESP_OK {
             #[cfg(feature = "log")]
             log::error!(
-                "Aborting OTA update failed unexpectedly with code {}",
+                "Aborting the OTA update returned an unexpected code: {}",
                 abort_result_code
             )
         }
     }
 }
 
-pub struct OtaFinished(());
+pub struct CompletedOtaUpdate {
+    partition: *const esp_partition_t,
+}
 
-impl OtaFinished {
-    /// Restarts the CPU, booting into the newly flashed app image.
+impl CompletedOtaUpdate {
+    /// Sets the boot partition to the newly flashed OTA partition.
+    pub fn set_as_boot_partition(&mut self) -> Result<()> {
+        match unsafe { esp_ota_set_boot_partition(self.partition) } {
+            ESP_OK => Ok(()),
+            ESP_ERR_INVALID_ARG => panic!("Invalid partition sent to esp_ota_set_boot_partition"),
+            ESP_ERR_OTA_VALIDATE_FAILED => Err(Error::from_kind(ErrorKind::InvalidImage)),
+            ESP_ERR_NOT_FOUND => panic!("OTA data partition not found"),
+            ESP_ERR_FLASH_OP_TIMEOUT => Err(Error::from_kind(ErrorKind::FlashTimeout)),
+            ESP_ERR_FLASH_OP_FAIL => Err(Error::from_kind(ErrorKind::FlashFailed)),
+            code => panic!("Unexpected esp_ota_set_boot_partition code: {}", code),
+        }
+    }
+
+    /// Restarts the CPU. If [`set_as_boot_partition`](CompletedOtaUpdate::set_as_boot_partition) was
+    /// called and completed successfully, the CPU will boot into the newly written app.
+    ///
+    /// After successful restart, CPU reset reason will be SW_CPU_RESET. Peripherals
+    /// (except for WiFi, BT, UART0, SPI1, and legacy timers) are not reset.
     pub fn restart(self) -> ! {
         unsafe { esp_restart() }
-        panic!("esp_restart returned");
+        unreachable!("esp_restart returned");
+    }
+
+    /// Returns a raw pointer to the partition that the new app was written to.
+    pub fn raw_partition(&self) -> *const esp_partition_t {
+        self.partition
     }
 }
 
@@ -235,7 +257,7 @@ pub fn mark_app_valid() {
 ///
 /// If rolling back failed, it returns an error, otherwise this function never returns,
 /// as the CPU is rebooting.
-pub fn rollback() -> Result<core::convert::Infallible> {
+pub fn rollback_and_reboot() -> Result<core::convert::Infallible> {
     match unsafe { esp_ota_mark_app_invalid_rollback_and_reboot() } {
         ESP_FAIL => Err(Error::from_kind(ErrorKind::RollbackFailed)),
         ESP_ERR_OTA_ROLLBACK_FAILED => Err(Error::from_kind(ErrorKind::RollbackFailedNoApps)),
