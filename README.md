@@ -6,6 +6,14 @@ ESP.
 
 [OTA updates]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/ota.html
 
+## Comparison with `esp-idf-svc`
+
+After writing this library I learned that the `esp-idf-svc` crate [has experimental support for
+OTA updates]. It's "hidden" in a module that is not visible in the generated documentation,
+due to being behind a feature that is not enabled by default, nor when generating the docs.
+
+[has experimental support for OTA updates]: https://github.com/esp-rs/esp-idf-svc/blob/34dfee2a4f08692f415e965e4cd117034e6be56e/src/ota.rs
+
 ## Usage
 
 This section will explain how to use `esp-ota` in an application to write a downloaded app image
