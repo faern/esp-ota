@@ -51,9 +51,10 @@ The app that you want to flash must have the correct format. It should not be th
 produced by a regular `cargo build` in an ESP project, but rather the ESP32 specific
 [app image format].
 
-One way to convert your programs into this format is with [`esptool.py elf2image`]:
+Both [`esptool.py elf2image`] and `espflash save-image` can be used to convert the binary:
 ```
 $ esptool.py --chip ESP32-C3 elf2image --output my-app.bin target/release/my-app
+$ espflash save-image ESP32-C3 target/release/my-app my-app.bin
 ```
 
 [app image format]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/app_image_format.html
