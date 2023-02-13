@@ -81,7 +81,7 @@ for app_chunk in NEW_APP.chunks(4096) {
 }
 
 // Performs validation of the newly written app image and completes the OTA update.
-let completed_ota = ota.finalize()?;
+let mut completed_ota = ota.finalize()?;
 
 // Sets the newly written to partition as the next partition to boot from.
 completed_ota.set_as_boot_partition()?;
