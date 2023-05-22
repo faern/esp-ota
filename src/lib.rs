@@ -116,7 +116,7 @@ impl OtaUpdate {
         }
 
         let mut ota_handle = 0;
-        match unsafe { esp_ota_begin(partition, OTA_SIZE_UNKNOWN, &mut ota_handle) } {
+        match unsafe { esp_ota_begin(partition, OTA_SIZE_UNKNOWN as usize, &mut ota_handle) } {
             ESP_OK => Ok(()),
             ESP_ERR_INVALID_ARG => panic!("Invalid partition or out_handle"),
             ESP_ERR_NO_MEM => Err(Error::from_kind(ErrorKind::AllocFailed)),
@@ -150,7 +150,7 @@ impl OtaUpdate {
         let chunk_ptr = app_image_chunk.as_ptr() as *const _;
         let chunk_len = u32::try_from(app_image_chunk.len()).expect("Too large firmware chunk");
 
-        match unsafe { esp_ota_write(self.ota_handle, chunk_ptr, chunk_len) } {
+        match unsafe { esp_ota_write(self.ota_handle, chunk_ptr, chunk_len as usize) } {
             ESP_OK => Ok(()),
             ESP_ERR_INVALID_ARG => panic!("Invalid OTA handle"),
             ESP_ERR_OTA_VALIDATE_FAILED => Err(Error::from_kind(ErrorKind::InvalidMagicByte)),
