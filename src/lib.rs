@@ -148,9 +148,9 @@ impl OtaUpdate {
     /// The format of the app image can be read about in the main README and crate documentation.
     pub fn write(&mut self, app_image_chunk: &[u8]) -> Result<()> {
         let chunk_ptr = app_image_chunk.as_ptr() as *const _;
-        let chunk_len = u32::try_from(app_image_chunk.len()).expect("Too large firmware chunk");
+        let chunk_len = app_image_chunk.len();
 
-        match unsafe { esp_ota_write(self.ota_handle, chunk_ptr, chunk_len as usize) } {
+        match unsafe { esp_ota_write(self.ota_handle, chunk_ptr, chunk_len) } {
             ESP_OK => Ok(()),
             ESP_ERR_INVALID_ARG => panic!("Invalid OTA handle"),
             ESP_ERR_OTA_VALIDATE_FAILED => Err(Error::from_kind(ErrorKind::InvalidMagicByte)),
