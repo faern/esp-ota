@@ -116,7 +116,7 @@ impl OtaUpdate {
         }
 
         let mut ota_handle = 0;
-        match unsafe { esp_ota_begin(partition, OTA_SIZE_UNKNOWN, &mut ota_handle) } {
+        match unsafe { esp_ota_begin(partition, OTA_SIZE_UNKNOWN as usize, &mut ota_handle) } {
             ESP_OK => Ok(()),
             ESP_ERR_INVALID_ARG => panic!("Invalid partition or out_handle"),
             ESP_ERR_NO_MEM => Err(Error::from_kind(ErrorKind::AllocFailed)),
@@ -148,7 +148,7 @@ impl OtaUpdate {
     /// The format of the app image can be read about in the main README and crate documentation.
     pub fn write(&mut self, app_image_chunk: &[u8]) -> Result<()> {
         let chunk_ptr = app_image_chunk.as_ptr() as *const _;
-        let chunk_len = u32::try_from(app_image_chunk.len()).expect("Too large firmware chunk");
+        let chunk_len = app_image_chunk.len();
 
         match unsafe { esp_ota_write(self.ota_handle, chunk_ptr, chunk_len) } {
             ESP_OK => Ok(()),
@@ -230,7 +230,6 @@ impl CompletedOtaUpdate {
     /// (except for WiFi, BT, UART0, SPI1, and legacy timers) are not reset.
     pub fn restart(self) -> ! {
         unsafe { esp_restart() }
-        unreachable!("esp_restart returned");
     }
 
     /// Returns a raw pointer to the partition that the new app was written to.
