@@ -17,5 +17,11 @@ add, fix, increase, force etc.. Not added, fixed, increased, forced etc.
 ## [Unreleased]
 
 
+## [0.2.0] - 2023-07-09
+### Changed
+- Upgrade `esp-idf-sys` from 0.31 to 0.33.
+- Upgrade `embuild` from 0.30 to 0.31
+
+
 ## [0.1.0] - 2022-10-01
 Initial release. Can perform OTA updates
