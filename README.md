@@ -53,8 +53,14 @@ produced by a regular `cargo build` in an ESP project, but rather the ESP32 spec
 
 Both [`esptool.py elf2image`] and `espflash save-image` can be used to convert the binary:
 ```
-$ esptool.py --chip ESP32-C3 elf2image --output my-app.bin target/release/my-app
+# With espflash 2.x (recommended way):
+$ espflash save-image --chip esp32c3 target/release/my-app my-app.bin
+
+# With older espflash <=1.7:
 $ espflash save-image ESP32-C3 target/release/my-app my-app.bin
+
+# With the not-Rust-specific esptool:
+$ esptool.py --chip ESP32-C3 elf2image --output my-app.bin target/release/my-app
 ```
 
 [app image format]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/app_image_format.html
