@@ -23,3 +23,6 @@ log = { version = "0.4", optional = true }
 
 [build-dependencies]
 embuild = "0.31.2"
+
+[dev-dependencies]
+esp-idf-svc = "0.48.1"
