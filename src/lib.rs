@@ -104,6 +104,11 @@ pub struct OtaUpdate {
     ota_handle: esp_ota_handle_t,
 }
 
+// SAFETY: The `partition` raw pointer, which prevents the auto-impl of Send in the first place,
+//   does no refer task-specific data and thus is safe to be used in other tasks
+//   Furthermore, we consider advancing a running OTA update from different tasks to be safe.
+unsafe impl Send for OtaUpdate {}
+
 impl OtaUpdate {
     /// Starts an OTA update to the next OTA compatible partition.
     ///
