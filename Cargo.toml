@@ -17,12 +17,12 @@ categories = ["embedded", "api-bindings"]
 default = ["log"]
 
 [dependencies]
-esp-idf-sys = { version = "0.35.0" }
+esp-idf-sys = { version = "0.34.0" }
 # If the `log` feature is enabled, the crate does some internal logging during the OTA operations
 log = { version = "0.4", optional = true }
 
 [build-dependencies]
-embuild = "0.32.0"
+embuild = "0.31.2"
 
 [dev-dependencies]
-esp-idf-svc = "0.49.0"
+esp-idf-svc = "0.48.1"
