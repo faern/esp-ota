@@ -36,11 +36,17 @@ ota_0,    app,  ota_0,   0x10000, 0x180000,
 ota_1,    app,  ota_1,   0x190000, 0x180000,
 ```
 
-And tell espflash to use it in `Cargo.toml`. Read more in the [cargo espflash documentation]:
+And tell espflash to use it in `.cargo/config.toml` similar to the following according to your target. Read more in the [cargo espflash documentation](https://github.com/esp-rs/espflash/blob/main/cargo-espflash/README.md#bootloader-and-partition-table).
 ```toml
-[package.metadata.espflash]
-partition_table = "partitions.csv"
+[build]
+target = "xtensa-esp32s3-espidf"
+
+[target.xtensa-esp32s3-espidf]
+linker = "ldproxy"
+runner = "espflash flash --monitor --partition-table=partitions.csv"
 ```
+
+
 
 [cargo espflash documentation]: https://github.com/esp-rs/espflash/blob/master/cargo-espflash/README.md#package-metadata
 [ESP partition tables]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
