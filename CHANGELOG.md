@@ -16,6 +16,9 @@ add, fix, increase, force etc.. Not added, fixed, increased, forced etc.
 
 ## [Unreleased]
 
+## [0.2.1] - 2024-12-29
+### Changed
+- Upgrade `esp-idf-sys` from 0.34 to 0.35 to build in current esp-rs/esp-idf-template.
 
 ## [0.2.0] - 2023-07-09
 ### Changed
