@@ -17,6 +17,15 @@ add, fix, increase, force etc.. Not added, fixed, increased, forced etc.
 ## [Unreleased]
 
 
+## [0.2.1] - 2025-01-31
+### Added
+- Implement `Send` for `OtaUpdate`.
+
+### Changed
+- Upgrade `esp-idf-sys` to 0.35
+- Upgrade `embuild` to 0.32
+
+
 ## [0.2.0] - 2023-07-09
 ### Changed
 - Upgrade `esp-idf-sys` from 0.31 to 0.33.
