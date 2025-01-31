@@ -36,13 +36,9 @@ ota_0,    app,  ota_0,   0x10000, 0x180000,
 ota_1,    app,  ota_1,   0x190000, 0x180000,
 ```
 
-And tell espflash to use it in `Cargo.toml`. Read more in the [cargo espflash documentation]:
-```toml
-[package.metadata.espflash]
-partition_table = "partitions.csv"
-```
+Please see the [cargo espflash documentation] for how to tell it to flash with the custom partition table.
 
-[cargo espflash documentation]: https://github.com/esp-rs/espflash/blob/master/cargo-espflash/README.md#package-metadata
+[cargo espflash documentation]: https://github.com/esp-rs/espflash/blob/main/cargo-espflash/README.md#configuration-file
 [ESP partition tables]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
 
 ### App image format
