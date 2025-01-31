@@ -18,6 +18,8 @@ add, fix, increase, force etc.. Not added, fixed, increased, forced etc.
 ### Changed
 - Upgrade `esp-idf-sys` to 0.36
 - Upgrade `embuild` to 0.33
+- Disable the `log` feature by default, making it opt-in. Default features are evil,
+  especially the ones pulling in dependencies.
 
 
 ## [0.2.1] - 2025-01-31

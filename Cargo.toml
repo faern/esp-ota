@@ -13,9 +13,6 @@ Easy OTA updates for ESP32 chips using only safe Rust. Transport agnostic.
 keywords = ["esp", "esp32", "ota", "update", "flash"]
 categories = ["embedded", "api-bindings"]
 
-[features]
-default = ["log"]
-
 [dependencies]
 esp-idf-sys = { version = "0.36.0" }
 # If the `log` feature is enabled, the crate does some internal logging during the OTA operations
