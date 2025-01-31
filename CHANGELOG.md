@@ -15,6 +15,9 @@ add, fix, increase, force etc.. Not added, fixed, increased, forced etc.
 
 
 ## [Unreleased]
+
+
+## [0.2.2] - 2025-01-31
 ### Changed
 - Upgrade `esp-idf-sys` to 0.36
 - Upgrade `embuild` to 0.33
